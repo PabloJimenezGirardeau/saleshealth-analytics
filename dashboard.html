@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SalesHealth · Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="reports/dashboard_data.js"></script>
+<style>
+:root{
+  --bg:#0B0C12;--surface:#11131C;--elevated:#181A26;--border:#222538;--border2:#2C2F45;
+  --text:#E8EAF6;--text2:#8B91B0;--text3:#565E80;
+  --blue:#3D7FD4;--green:#2BB57A;--orange:#E8874A;--red:#E57373;--teal:#26B5C4;--purple:#9B7FE8;
+  --sidebar-w:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100}
+.sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.sb-logo .brand{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.4px}
+.sb-logo .sub{font-size:10px;color:var(--text2);margin-top:3px;letter-spacing:.2px}
+.nav-group{padding:8px 0}
+.nav-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);padding:6px 18px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;cursor:pointer;color:var(--text2);font-size:12.5px;transition:background .12s,color .12s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{background:var(--elevated);color:var(--text)}
+.nav-item.active{color:var(--blue);background:rgba(61,127,212,.08);border-left-color:var(--blue);font-weight:500}
+.nav-item svg{flex-shrink:0;width:15px;height:15px;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sb-foot{margin-top:auto;padding:12px 18px;border-top:1px solid var(--border);font-size:10px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px var(--green)}
+
+/* ── Main ── */
+.main{margin-left:var(--sidebar-w);flex:1}
+.page{display:none;padding:26px 30px 60px}
+.page.active{display:block}
+.pg-hd{margin-bottom:22px}
+.pg-hd h1{font-size:20px;font-weight:600;letter-spacing:-.5px}
+.pg-hd .sub{font-size:12px;color:var(--text2);margin-top:3px}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.card h3{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.card-sub{font-size:11px;color:var(--text2);margin-bottom:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.row2 .card{margin-bottom:0}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.row3 .card{margin-bottom:0}
+
+/* ── KPI cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.kpi-val{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1}
+.kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;margin-top:6px;padding:2px 7px;border-radius:4px}
+.kpi-delta.up{background:rgba(43,181,122,.12);color:#2BB57A}
+.kpi-delta.dn{background:rgba(229,115,115,.12);color:#E57373}
+.kpi-delta.nu{background:rgba(122,127,154,.1);color:var(--text2)}
+.kpi-spark{position:absolute;bottom:0;left:0;right:0;height:36px;opacity:.25}
+
+/* ── Hallazgos ── */
+.hallazgos{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.hallazgo{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;display:flex;flex-direction:column;gap:8px}
+.hallazgo .ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.hallazgo .txt{font-size:11.5px;color:var(--text2);line-height:1.45}
+.hallazgo .txt b{color:var(--text);font-weight:600}
+
+/* ── Health indicator ── */
+.health-bar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:16px}
+.health-ico{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.health-ico.verde{background:var(--green);box-shadow:0 0 8px var(--green)}
+.health-ico.amarillo{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.health-ico.rojo{background:var(--red);box-shadow:0 0 8px var(--red)}
+.health-lbl{font-size:12px;font-weight:500}
+.health-detail{font-size:11px;color:var(--text2);margin-left:auto}
+
+/* ── Top3 productos ── */
+.top3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.top3-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 15px}
+.top3-rank{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.top3-prod{font-size:12px;font-weight:500;margin-bottom:4px;line-height:1.35}
+.top3-val{font-size:15px;font-weight:600;color:var(--blue)}
+
+/* ── Cluster summary cards ── */
+.cl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.cl-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.cl-card.champions{border-top:2px solid var(--green)}
+.cl-card.base{border-top:2px solid var(--blue)}
+.cl-card.churned{border-top:2px solid var(--red)}
+.cl-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;margin-bottom:8px;letter-spacing:.3px}
+.cl-badge.champions{background:rgba(43,181,122,.15);color:var(--green)}
+.cl-badge.base{background:rgba(61,127,212,.15);color:var(--blue)}
+.cl-badge.churned{background:rgba(229,115,115,.15);color:var(--red)}
+.cl-stat{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.cl-stat-lbl{font-size:10px;color:var(--text2)}
+.cl-stat-val{font-size:12px;font-weight:600}
+
+/* ── Legend ── */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.leg-ci{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* ── Heatmap ── */
+.hm-wrap{overflow-x:auto}
+.hm-table{border-collapse:separate;border-spacing:3px;font-size:10px;width:100%}
+.hm-table th{color:var(--text2);font-weight:500;text-align:center;padding:2px 3px;white-space:nowrap;font-size:10px}
+.hm-table td{height:28px;border-radius:4px;text-align:center;vertical-align:middle;font-size:9px;font-weight:600;cursor:default;transition:filter .1s}
+.hm-table td:hover{filter:brightness(1.25)}
+.hm-yr{color:var(--text2);font-size:11px;font-weight:600;text-align:right;padding-right:8px;white-space:nowrap}
+
+/* ── RFM matrix ── */
+.rfm-wrap{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:3px;font-size:10px}
+.rfm-head{color:var(--text2);font-weight:600;text-align:center;padding:4px}
+.rfm-rlbl{color:var(--text2);font-weight:600;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px}
+.rfm-cell{border-radius:6px;padding:10px 6px;text-align:center;font-weight:600;font-size:11px;cursor:default;transition:filter .1s}
+.rfm-cell:hover{filter:brightness(1.2)}
+
+/* ── Buscador ── */
+.srch-wrap{position:relative;margin-bottom:12px}
+.srch{width:100%;background:var(--elevated);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;padding:8px 13px 8px 36px;outline:none}
+.srch:focus{border-color:var(--blue)}
+.srch::placeholder{color:var(--text2)}
+.srch-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text2);pointer-events:none}
+.tbl-wrap{max-height:400px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.dtbl{width:100%;border-collapse:collapse;font-size:12px}
+.dtbl thead th{text-align:left;color:var(--text2);font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:0 10px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.dtbl tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.dtbl tbody tr:hover{background:var(--elevated)}
+.dtbl tbody td{padding:7px 10px;color:var(--text)}
+.dtbl tbody td.m{color:var(--text2)}
+.tbl-count{font-size:10px;color:var(--text2);margin-top:6px}
+
+/* ── Resumen ejecutivo ── */
+.exec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.exec-kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.exec-kpi .val{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.exec-kpi .lbl{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2)}
+.hallazgos-exec{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.hall-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;gap:12px;align-items:flex-start}
+.hall-num{font-size:24px;font-weight:700;color:var(--blue);flex-shrink:0;line-height:1;margin-top:2px}
+.hall-body .titulo{font-size:13px;font-weight:600;margin-bottom:4px}
+.hall-body .desc{font-size:11.5px;color:var(--text2);line-height:1.5}
+.exec-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.seg-card{border-radius:10px;padding:16px;border:1px solid var(--border)}
+.seg-card.champions{background:rgba(43,181,122,.06);border-color:rgba(43,181,122,.2)}
+.seg-card.base{background:rgba(61,127,212,.06);border-color:rgba(61,127,212,.2)}
+.seg-card.churned{background:rgba(229,115,115,.06);border-color:rgba(229,115,115,.2)}
+.seg-nombre{font-size:15px;font-weight:700;margin-bottom:10px}
+.seg-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px}
+.seg-row .lbl{color:var(--text2)}
+.seg-row .val{font-weight:500}
+.exec-print{text-align:right;margin-bottom:16px}
+.btn-print{background:var(--elevated);border:1px solid var(--border2);color:var(--text2);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .12s}
+.btn-print:hover{background:var(--border2);color:var(--text)}
+
+/* ── CLTV específico ── */
+.cltv-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+
+/* ── Scatter labels ── */
+.pca-stats{display:flex;gap:20px;margin-bottom:8px;flex-wrap:wrap}
+.pca-s{font-size:11px;color:var(--text2)}
+.pca-s b{color:var(--text);font-weight:600}
+
+/* ── Print ── */
+@media print{
+  .sidebar,.nav-item,.btn-print{display:none!important}
+  .main{margin-left:0}
+  .page{display:block!important;padding:0}
+  body{background:white;color:black}
+  .card,.kpi-card,.exec-kpi,.hall-card,.seg-card{background:white;border:1px solid #ddd;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="brand">SALESHEALTH</div>
+    <div class="sub">Gestión de Datos · UAX 2025/26</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-lbl">Páginas</div>
+    <div class="nav-item active" data-page="ejecutivo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Resumen Ejecutivo
+    </div>
+    <div class="nav-item" data-page="inicio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Inicio
+    </div>
+    <div class="nav-item" data-page="kpis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      KPIs Globales
+    </div>
+    <div class="nav-item" data-page="devoluciones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+      Devoluciones
+    </div>
+    <div class="nav-item" data-page="clientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Análisis Cliente
+    </div>
+    <div class="nav-item" data-page="productos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Productos
+    </div>
+    <div class="nav-item" data-page="marcas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Marcas & Categorías
+    </div>
+    <div class="nav-item" data-page="rentabilidad">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Rentabilidad
+    </div>
+    <div class="nav-item" data-page="tiendas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Tiendas
+    </div>
+    <div class="nav-item" data-page="tendencias">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Tendencias
+    </div>
+  </div>
+  <div class="sb-foot"><div class="sb-dot"></div>Datos actualizados</div>
+</nav>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main">
+
+<!-- ── RESUMEN EJECUTIVO ── -->
+<section class="page active" id="page-ejecutivo">
+  <div class="pg-hd">
+    <h1>Resumen Ejecutivo</h1>
+    <div class="sub">Vista consolidada del negocio · imprimible</div>
+  </div>
+  <div class="exec-print"><button class="btn-print" onclick="window.print()">⎙ Imprimir / Exportar PDF</button></div>
+  <div class="exec-grid" id="exec-kpis"></div>
+  <div style="margin-bottom:10px;font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.3px">HALLAZGOS CLAVE</div>
+  <div class="hallazgos-exec" id="exec-hallazgos"></div>
+  <div style="margin-bottom:10px;font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.3px">SEGMENTACIÓN DE CLIENTES</div>
+  <div class="exec-seg" id="exec-seg"></div>
+  <div class="card">
+    <h3>Evolución de ingresos netos</h3>
+    <div class="card-sub">Histórico completo 2020–2025</div>
+    <div style="position:relative;height:200px"><canvas id="c-exec-evol"></canvas></div>
+  </div>
+</section>
+
+<!-- ── INICIO ── -->
+<section class="page" id="page-inicio">
+  <div class="pg-hd"><h1>Visión General</h1><div class="sub">Métricas ejecutivas · saleshealth 2020–2025</div></div>
+  <div id="health-bar"></div>
+  <div class="kpi-grid" id="kpi-top"></div>
+  <div class="kpi-grid" id="kpi-bot"></div>
+  <div style="margin-bottom:8px;margin-top:6px;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase">Hallazgos clave</div>
+  <div class="hallazgos" id="hallazgos"></div>
+  <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase">Top 3 productos — mes en curso</div>
+  <div class="top3" id="top3"></div>
+  <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase">Segmentación de clientes</div>
+  <div class="cl-grid" id="cl-grid"></div>
+  <div class="card">
+    <h3>Evolución de ingresos netos — últimos 12 meses</h3>
+    <div class="card-sub">Ingresos (eje izq.) y ratio devoluciones/ventas % (eje der.)</div>
+    <div style="position:relative;height:200px"><canvas id="c-spark"></canvas></div>
+  </div>
+</section>
+
+<!-- ── KPIs GLOBALES ── -->
+<section class="page" id="page-kpis">
+  <div class="pg-hd"><h1>KPIs Globales</h1><div class="sub">Evolución temporal, productos, tiendas y estacionalidad</div></div>
+  <div class="card">
+    <h3>Evolución mensual de ingresos</h3>
+    <div class="card-sub">Ingresos netos vs brutos · 2020–2025</div>
+    <div class="legend" id="lg-evol"></div>
+    <div style="position:relative;height:260px"><canvas id="c-evol"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Top 10 productos por ingresos</h3>
+      <div class="card-sub">Ingresos netos acumulados</div>
+      <div id="wp-prod" style="position:relative"><canvas id="c-prod"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Ingresos por tienda</h3>
+      <div class="card-sub">Ingresos netos acumulados</div>
+      <div id="wp-tiend" style="position:relative"><canvas id="c-tiend"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Estacionalidad de ingresos</h3>
+    <div class="card-sub">Ingresos netos mensuales por año · intensidad = volumen</div>
+    <div class="hm-wrap"><table class="hm-table" id="hm"></table></div>
+  </div>
+</section>
+
+<!-- ── DEVOLUCIONES ── -->
+<section class="page" id="page-devoluciones">
+  <div class="pg-hd"><h1>Devoluciones</h1><div class="sub">Análisis de retornos, motivos y productos</div></div>
+  <div class="kpi-grid" id="kpi-devol"></div>
+  <div class="card">
+    <h3>Evolución mensual de devoluciones</h3>
+    <div class="card-sub">Número de devoluciones (eje izq.) e importe devuelto (eje der.)</div>
+    <div class="legend" id="lg-devol"></div>
+    <div style="position:relative;height:240px"><canvas id="c-devol-evol"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Motivos de devolución</h3>
+      <div class="card-sub">Distribución por motivo</div>
+      <div style="position:relative;height:250px"><canvas id="c-mot"></canvas></div>
+      <div class="legend" id="lg-mot" style="margin-top:10px;margin-bottom:0"></div>
+    </div>
+    <div class="card">
+      <h3>Top 10 productos devueltos</h3>
+      <div class="card-sub">Por número de devoluciones</div>
+      <div id="wp-devprod" style="position:relative"><canvas id="c-devprod"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ANÁLISIS CLIENTE ── -->
+<section class="page" id="page-clientes">
+  <div class="pg-hd"><h1>Análisis de Clientes</h1><div class="sub">Pareto, fidelización y buscador Customer 360</div></div>
+  <div class="row2">
+    <div class="card">
+      <h3>Curva de Pareto — concentración de valor</h3>
+      <div class="card-sub">% clientes ordenados por CLTV vs % CLTV acumulado</div>
+      <div style="position:relative;height:250px"><canvas id="c-pareto"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Concentración de valor — Champions vs Resto</h3>
+      <div class="card-sub">Comparativa de clientes y CLTV generado entre segmentos</div>
+      <div style="position:relative;height:250px"><canvas id="c-lorenz"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Customer 360 — buscador de clientes</h3>
+    <div class="card-sub">Consulta individual por nombre · <span id="lbl-total"></span></div>
+    <div class="srch-wrap">
+      <svg class="srch-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="srch" id="srch" type="text" placeholder="Buscar cliente por nombre…">
+    </div>
+    <div class="tbl-wrap">
+      <table class="dtbl">
+        <thead><tr>
+          <th>Nombre</th><th>CLTV (€)</th><th>Ingresos netos</th><th>AOV</th>
+          <th>Frec./mes</th><th>Recencia (d)</th><th>Antigüedad (d)</th><th>Ventas</th><th>Return %</th><th>Segmento</th>
+        </tr></thead>
+        <tbody id="c360-body"></tbody>
+      </table>
+    </div>
+    <div class="tbl-count" id="c360-count"></div>
+  </div>
+</section>
+
+<!-- ── CLTV ── -->
+<section class="page" id="page-cltv">
+  <div class="pg-hd"><h1>Análisis CLTV</h1><div class="sub">Customer Lifetime Value en profundidad</div></div>
+  <div class="cltv-kpi-grid" id="cltv-kpis"></div>
+  <div class="row2">
+    <div class="card">
+      <h3>Distribución CLTV — escala logarítmica</h3>
+      <div class="card-sub">Bins en escala log · revela la distribución real sin colapso</div>
+      <div style="position:relative;height:230px"><canvas id="c-cltv-hist"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Champions vs resto — concentración de valor</h3>
+      <div class="card-sub">CLTV medio por segmento · escala independiente por grupo</div>
+      <div style="position:relative;height:230px"><canvas id="c-cltv-seg"></canvas></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>CLTV vs Antigüedad del cliente</h3>
+      <div class="card-sub">Solo Champions (p99) · ¿más tiempo = más valor?</div>
+      <div class="legend" id="lg-sc-ant"></div>
+      <div style="position:relative;height:230px"><canvas id="c-sc-ant"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>CLTV vs Recencia del cliente</h3>
+      <div class="card-sub">Solo Champions (p99) · ¿los más activos generan más?</div>
+      <div class="legend" id="lg-sc-rec"></div>
+      <div style="position:relative;height:230px"><canvas id="c-sc-rec"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Concentración de valor — % clientes vs % CLTV</h3>
+    <div class="card-sub">El 13% de clientes Champions genera el 91.6% del CLTV total del negocio</div>
+    <div class="row2" style="margin-bottom:0;gap:10px">
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.3px">% CLIENTES POR SEGMENTO</div>
+        <div style="position:relative;height:220px"><canvas id="c-donut-cli"></canvas></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.3px">% CLTV POR SEGMENTO</div>
+        <div style="position:relative;height:220px"><canvas id="c-donut-cltv"></canvas></div>
+      </div>
+    </div>
+    <div class="legend" id="lg-donuts" style="margin-top:14px;justify-content:center"></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Matriz RFM — Recencia × Frecuencia</h3>
+      <div class="card-sub">Intensidad = CLTV medio por celda · terciles</div>
+      <div id="rfm-wrap" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>Top 20 clientes por CLTV</h3>
+      <div class="card-sub">Los clientes de mayor valor del negocio</div>
+      <div class="tbl-wrap" style="max-height:320px">
+        <table class="dtbl">
+          <thead><tr><th>#</th><th>Nombre</th><th>CLTV</th><th>AOV</th><th>Ventas</th><th>Recencia</th><th>Segmento</th></tr></thead>
+          <tbody id="top20-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CLUSTERING ── -->
+<section class="page" id="page-clustering">
+  <div class="pg-hd"><h1>Segmentación de Clientes</h1><div class="sub">K-Means K=3 · PCA 2D · Champions / Base / Churned</div></div>
+
+  <!-- KPI cards por cluster -->
+  <div class="row3" id="cl-kpi-cards"></div>
+
+  <div class="row2">
+    <div class="card">
+      <h3>Return Rate por cluster</h3>
+      <div class="card-sub">Porcentaje de unidades devueltas sobre compradas · diferenciador clave</div>
+      <div style="position:relative;height:220px"><canvas id="c-cl-rr"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Número de ventas medias por cluster</h3>
+      <div class="card-sub">Cuántas compras ha hecho de media cada cliente del segmento</div>
+      <div style="position:relative;height:220px"><canvas id="c-cl-ventas"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <h3>CLTV medio por cluster — escala logarítmica</h3>
+      <div class="card-sub">Escala log para visualizar la diferencia entre segmentos</div>
+      <div style="position:relative;height:220px"><canvas id="c-cl-cltv"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>AOV medio por cluster</h3>
+      <div class="card-sub">Ticket medio de compra por segmento</div>
+      <div style="position:relative;height:220px"><canvas id="c-cl-aov"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Visualización PCA 2D</h3>
+    <div class="pca-stats" id="pca-stats"></div>
+    <div class="legend" id="lg-scatter"></div>
+    <div style="position:relative;height:320px"><canvas id="c-scatter"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h3>Perfil comparativo de clusters</h3>
+    <div class="card-sub">Métricas medias reales por segmento</div>
+    <table class="dtbl" id="cl-perfil-tbl">
+      <thead><tr>
+        <th>Métrica</th><th>Champions</th><th>Base</th><th>Churned</th>
+      </tr></thead>
+      <tbody id="cl-perfil-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── PRODUCTOS ── -->
+<section class="page" id="page-productos">
+  <div class="pg-hd"><h1>Análisis de Productos</h1><div class="sub">Exploración individual y comparativa de productos</div></div>
+
+  <!-- Selector -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px" id="prod-tabs"></div>
+
+  <!-- Vista individual -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px" id="prod-kpis"></div>
+  <div class="row2">
+    <div class="card">
+      <h3 id="prod-evol-title">Evolución mensual</h3>
+      <div class="card-sub">Ingresos netos mensuales</div>
+      <div style="position:relative;height:220px"><canvas id="c-prod-evol"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Información del producto</h3>
+      <div class="card-sub">Ficha completa</div>
+      <div id="prod-ficha" style="padding-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- Comparador -->
+  <div class="card">
+    <h3>Comparar productos</h3>
+    <div class="card-sub">Selecciona hasta 4 productos · métricas lado a lado</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="prod-compare-chips"></div>
+    <div id="prod-compare-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
+  </div>
+
+  <!-- Top/Bottom -->
+  <div class="row2">
+    <div class="card">
+      <h3>Top 5 productos</h3>
+      <div class="card-sub">Por ingresos netos acumulados</div>
+      <div style="position:relative;height:180px"><canvas id="c-prod-top5"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 5 por margen %</h3>
+      <div class="card-sub">Productos más rentables</div>
+      <div style="position:relative;height:180px"><canvas id="c-prod-margen5"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MARCAS & CATEGORÍAS ── -->
+<section class="page" id="page-marcas">
+  <div class="pg-hd"><h1>Marcas &amp; Categorías</h1><div class="sub">Exploración individual y comparativa de marcas</div></div>
+
+  <!-- Selector -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px" id="marca-tabs"></div>
+
+  <!-- Vista individual -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px" id="marca-kpis"></div>
+  <div class="card">
+    <h3 id="marca-evol-title">Evolución mensual</h3>
+    <div class="card-sub">Ingresos netos mensuales</div>
+    <div style="position:relative;height:220px"><canvas id="c-marca-evol"></canvas></div>
+  </div>
+
+  <!-- Comparador -->
+  <div class="card">
+    <h3>Comparar marcas</h3>
+    <div class="card-sub">Selecciona hasta 4 marcas · métricas lado a lado</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="marca-compare-chips"></div>
+    <div id="marca-compare-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
+  </div>
+
+  <!-- Categorías -->
+  <div class="row2">
+    <div class="card">
+      <h3 id="cat-ing-title">Categorías por ingresos</h3>
+      <div class="card-sub">Distribución de categorías de la marca seleccionada</div>
+      <div style="position:relative;height:260px"><canvas id="c-cat-ing"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Evolución de ingresos por categoría</h3>
+      <div class="card-sub">Top 6 categorías · ingresos anuales</div>
+      <div class="legend" id="lg-cat-evol"></div>
+      <div style="position:relative;height:260px"><canvas id="c-cat-evol"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── RENTABILIDAD ── -->
+<section class="page" id="page-rentabilidad">
+  <div class="pg-hd"><h1>Rentabilidad</h1><div class="sub">Márgenes, costes y evolución de la rentabilidad del negocio</div></div>
+  <div class="row2">
+    <div class="card">
+      <h3>Evolución del margen % mensual</h3>
+      <div class="card-sub">Margen bruto sobre ingresos brutos · tendencia histórica</div>
+      <div style="position:relative;height:240px"><canvas id="c-r-mrg-evol"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Ingresos netos vs Coste total — anual</h3>
+      <div class="card-sub">Relación entre ingresos generados y coste incurrido</div>
+      <div style="position:relative;height:240px"><canvas id="c-r-anual"></canvas></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Margen % por categoría</h3>
+      <div class="card-sub">¿Qué líneas de producto son más rentables?</div>
+      <div id="wp-r-cat" style="position:relative"><canvas id="c-r-cat"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Evolución del margen % neto mensual</h3>
+      <div class="card-sub">¿Está mejorando la rentabilidad del negocio mes a mes?</div>
+      <div id="wp-r-bajo" style="position:relative;height:260px"><canvas id="c-r-bajo"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TIENDAS ── -->
+<section class="page" id="page-tiendas">
+  <div class="pg-hd"><h1>Comparativa de Tiendas</h1><div class="sub">Rendimiento individual y comparado de cada punto de venta</div></div>
+
+  <!-- Tabs selector -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px" id="tienda-tabs"></div>
+
+  <!-- Vista individual -->
+  <div id="tienda-detalle">
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px" id="t-kpi-single"></div>
+    <div class="row2">
+      <div class="card">
+        <h3 id="t-evol-title">Evolución mensual</h3>
+        <div class="card-sub">Ingresos netos mensuales</div>
+        <div style="position:relative;height:220px"><canvas id="c-t-single-evol"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Top 3 productos</h3>
+        <div class="card-sub">Productos más vendidos en esta tienda</div>
+        <div id="t-single-prod" style="padding-top:8px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Comparativa con la red — esta tienda vs media</h3>
+      <div class="card-sub">Posición de la tienda en el ranking de la red</div>
+      <div style="position:relative;height:200px"><canvas id="c-t-ranking"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Vista global -->
+  <div class="row2" style="margin-top:4px">
+    <div class="card">
+      <h3>Top 5 tiendas</h3>
+      <div class="card-sub">Por ingresos netos acumulados</div>
+      <div style="position:relative;height:180px"><canvas id="c-t-top5"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Bottom 5 tiendas</h3>
+      <div class="card-sub">Por ingresos netos acumulados</div>
+      <div style="position:relative;height:180px"><canvas id="c-t-bot5"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Comparador -->
+  <div class="card" style="margin-top:4px">
+    <h3>Comparar tiendas</h3>
+    <div class="card-sub">Selecciona hasta 4 tiendas para comparar</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="compare-checks"></div>
+    <div id="compare-cards" style="display:grid;gap:12px"></div>
+  </div>
+
+  <div class="card">
+    <h3>AOV y Return Rate por tienda</h3>
+    <div class="card-sub">Ticket medio vs tasa de devolución</div>
+    <div style="position:relative;height:260px"><canvas id="c-t-aov-rr"></canvas></div>
+  </div>
+</section>
+
+<!-- ── TENDENCIAS ── -->
+<section class="page" id="page-tendencias">
+  <div class="pg-hd"><h1>Tendencias</h1><div class="sub">Crecimiento interanual, patrones estacionales y evolución de productos</div></div>
+  <div class="card">
+    <h3>Comparativa Year-over-Year — ingresos por mes</h3>
+    <div class="card-sub">Mismos meses en distintos años · detecta estacionalidad y crecimiento</div>
+    <div class="legend" id="lg-yoy"></div>
+    <div style="position:relative;height:260px"><canvas id="c-yoy"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Crecimiento anual de ingresos</h3>
+      <div class="card-sub">Ingresos netos totales por año</div>
+      <div style="position:relative;height:230px"><canvas id="c-crec-anual"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Clientes activos por año</h3>
+      <div class="card-sub">Evolución de la base de clientes</div>
+      <div style="position:relative;height:230px"><canvas id="c-cli-anual"></canvas></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Productos con mayor crecimiento</h3>
+      <div class="card-sub">Variación % ingresos último año vs anterior</div>
+      <div id="wp-t-crec" style="position:relative"><canvas id="c-t-crec"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Productos en declive</h3>
+      <div class="card-sub">Variación % ingresos último año vs anterior</div>
+      <div id="wp-t-decr" style="position:relative"><canvas id="c-t-decr"></canvas></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <h3>Top 10 mejores meses históricos</h3>
+      <div class="card-sub">Meses con mayor ingreso neto registrado</div>
+      <div id="wp-t-best" style="position:relative"><canvas id="c-t-best"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 10 peores meses históricos</h3>
+      <div class="card-sub">Meses con menor ingreso neto registrado</div>
+      <div id="wp-t-worst" style="position:relative"><canvas id="c-t-worst"></canvas></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════════════════════
+if(!window.DASHBOARD_DATA){
+  document.body.innerHTML='<div style="padding:60px;color:#E57373;font-size:15px;font-family:system-ui">⚠ No se encontró <code>reports/dashboard_data.js</code> — ejecuta <code>python export_data.py</code> primero.</div>';
+}
+const D = window.DASHBOARD_DATA || {};
+const C = {blue:'#3D7FD4',green:'#2BB57A',orange:'#E8874A',red:'#E57373',teal:'#26B5C4',purple:'#9B7FE8'};
+const CC = {Champions:'#2BB57A',Base:'#3D7FD4',Churned:'#E57373'};
+const ORDER = ['Champions','Base','Churned'];
+const TT = {backgroundColor:'#181A26',titleColor:'#E0E2F0',bodyColor:'#7A7F9A',borderColor:'#2C2F45',borderWidth:1,padding:10};
+
+Chart.defaults.color='#8B91B0';
+Chart.defaults.borderColor='#222538';
+Chart.defaults.font.family="-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+
+function fmt(n,d=0){if(n==null)return'—';return new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);}
+function feu(n){if(n==null)return'—';const a=Math.abs(n);if(a>=1e6)return'€'+fmt(n/1e6,1)+'M';if(a>=1e3)return'€'+fmt(n/1e3,1)+'K';return'€'+fmt(n,0);}
+function fpct(n){return n==null?'—':(n>0?'+':'')+fmt(n,1)+'%';}
+function deltaHtml(v,suf=''){
+  if(v==null)return'';
+  const cls=v>0?'up':v<0?'dn':'nu', ar=v>0?'↑':v<0?'↓':'→';
+  return `<div class="kpi-delta ${cls}">${ar} ${fpct(v)}${suf?' <span style="opacity:.55;font-weight:400">'+suf+'</span>':''}</div>`;
+}
+function legend(el,items){el.innerHTML=items.map(([c,l,circle])=>`<div class="leg"><div class="${circle?'leg-ci':'leg-sq'}" style="background:${c}"></div>${l}</div>`).join('');}
+
+// Navigation
+const inited={};
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active');
+    const pg=el.dataset.page;
+    document.getElementById('page-'+pg).classList.add('active');
+    if(!inited[pg]){inited[pg]=true;setTimeout(()=>PAGES[pg]&&PAGES[pg](),60);}
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESUMEN EJECUTIVO
+// ═══════════════════════════════════════════════════════════════════════════
+(function(){
+  if(!D.kpis) return;
+  const k=D.kpis, cl=D.kpis.cluster_resumen||{};
+
+  // KPIs
+  const ekpis=[
+    ['Ingresos netos',feu(k.ingresos_netos),C.blue],
+    ['Clientes activos',fmt(k.num_clientes),C.green],
+    ['Return rate',fmt(k.return_rate,1)+'%',C.orange],
+    ['Margen % medio',fmt(k.margen_pct_medio,1)+'%',C.teal],
+  ];
+  document.getElementById('exec-kpis').innerHTML=ekpis.map(([l,v,c])=>
+    `<div class="exec-kpi"><div class="val" style="color:${c}">${v}</div><div class="lbl">${l}</div></div>`
+  ).join('');
+
+  // Hallazgos
+  const iconos=['01','02','03','04','05'];
+  document.getElementById('exec-hallazgos').innerHTML=(k.hallazgos||[]).map((h,i)=>
+    `<div class="hall-card"><div class="hall-num">${iconos[i]}</div><div class="hall-body"><div class="titulo">Hallazgo ${i+1}</div><div class="desc">${h}</div></div></div>`
+  ).join('');
+
+  // Segmentos
+  const segColores={Champions:C.green,Base:C.blue,Churned:C.red};
+  document.getElementById('exec-seg').innerHTML=ORDER.map(label=>{
+    const s=cl[label]||{};
+    return `<div class="seg-card ${label.toLowerCase()}">
+      <div class="seg-nombre" style="color:${segColores[label]}">${label}</div>
+      <div class="seg-row"><span class="lbl">Clientes</span><span class="val">${fmt(s.n)}</span></div>
+      <div class="seg-row"><span class="lbl">% del total</span><span class="val">${fmt(s.pct,1)}%</span></div>
+      <div class="seg-row"><span class="lbl">CLTV medio</span><span class="val">${feu(s.cltv_medio)}</span></div>
+      <div class="seg-row"><span class="lbl">% CLTV total</span><span class="val">${fmt(s.pct_cltv,1)}%</span></div>
+    </div>`;
+  }).join('');
+
+  // Gráfica evolución ejecutivo
+  const g=D.kpis_globales||{};
+  if(g.evolucion){
+    new Chart(document.getElementById('c-exec-evol'),{
+      type:'line',
+      data:{labels:g.evolucion.labels,datasets:[{
+        data:g.evolucion.ingresos_netos,borderColor:C.blue,
+        backgroundColor:'rgba(61,127,212,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:0
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.y)}}},
+        scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+                y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+      }
+    });
+  }
+  inited['ejecutivo']=true;
+})();
+
+const PAGES={};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INICIO
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.inicio=function(){
+  const k=D.kpis;
+
+  // Health bar
+  const hc={verde:C.green,amarillo:C.orange,rojo:C.red}[k.health]||C.green;
+  const ht={verde:'Negocio en buen estado',amarillo:'Atención recomendada',rojo:'Indicadores críticos'}[k.health]||'';
+  document.getElementById('health-bar').innerHTML=
+    `<div class="health-bar"><div class="health-ico ${k.health}"></div>
+     <span class="health-lbl" style="color:${hc}">${ht}</span>
+     <span class="health-detail">Return rate: ${fmt(k.return_rate,1)}% · Margen: ${fmt(k.margen_pct_medio,1)}% · Recencia media: ${fmt(k.recencia_media,0)}d</span></div>`;
+
+  // KPI cards
+  const m=k.mes_actual||{};
+  document.getElementById('kpi-top').innerHTML=[
+    ['Ingresos netos', feu(k.ingresos_netos), deltaHtml(m.var_mes_ant,'vs mes ant.')+deltaHtml(m.var_anio_ant,'vs año ant.')],
+    ['Ingresos brutos', feu(k.ingresos_brutos), ''],
+    ['Clientes activos', fmt(k.num_clientes), ''],
+    ['Ventas totales', fmt(k.num_ventas), deltaHtml(m.var_ventas,'vs mes ant.')],
+  ].map(([l,v,d])=>`<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div>${d}</div>`).join('');
+
+  document.getElementById('kpi-bot').innerHTML=[
+    ['AOV medio', feu(k.aov), ''],
+    ['Margen % medio', fmt(k.margen_pct_medio,1)+'%', ''],
+    ['Return rate', fmt(k.return_rate,1)+'%', ''],
+    ['Devoluciones', fmt(k.num_devoluciones), ''],
+  ].map(([l,v,d])=>`<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div>${d}</div>`).join('');
+
+  // Hallazgos
+  const iconos=['💡','📈','🏆','🔄','⭐'];
+  const colores=[C.blue,C.green,C.orange,C.red,C.purple];
+  document.getElementById('hallazgos').innerHTML=(k.hallazgos||[]).map((h,i)=>
+    `<div class="hallazgo">
+      <div class="ico" style="background:${colores[i]}22;color:${colores[i]}">${iconos[i]}</div>
+      <div class="txt">${h}</div>
+    </div>`
+  ).join('');
+
+  // Top 3 productos mes
+  const t3=k.top3_mes||{};
+  const rnks=['🥇','🥈','🥉'];
+  document.getElementById('top3').innerHTML=(t3.labels||[]).map((l,i)=>
+    `<div class="top3-card">
+      <div class="top3-rank" style="color:${colores[i]}">${rnks[i]} Posición ${i+1}</div>
+      <div class="top3-prod">${l}</div>
+      <div class="top3-val">${feu(t3.valores[i])}</div>
+    </div>`
+  ).join('');
+
+  // Cluster resumen
+  const cr=k.cluster_resumen||{};
+  document.getElementById('cl-grid').innerHTML=ORDER.map(label=>{
+    const s=cr[label]||{};
+    const cls=label.toLowerCase();
+    return `<div class="cl-card ${cls}">
+      <div class="cl-badge ${cls}">${label}</div>
+      <div class="cl-stat"><span class="cl-stat-lbl">Clientes</span><span class="cl-stat-val">${fmt(s.n)} (${fmt(s.pct,1)}%)</span></div>
+      <div class="cl-stat"><span class="cl-stat-lbl">CLTV medio</span><span class="cl-stat-val">${feu(s.cltv_medio)}</span></div>
+      <div class="cl-stat"><span class="cl-stat-lbl">% CLTV total</span><span class="cl-stat-val">${fmt(s.pct_cltv,1)}%</span></div>
+    </div>`;
+  }).join('');
+
+  // Sparkline + ratio devoluciones
+  const sp=k.sparkline;
+  new Chart(document.getElementById('c-spark'),{
+    type:'line',
+    data:{labels:sp.labels,datasets:[
+      {data:sp.valores,borderColor:C.blue,backgroundColor:'rgba(61,127,212,.07)',borderWidth:2,fill:true,tension:.4,pointRadius:3,pointBackgroundColor:C.blue,yAxisID:'y'},
+      {data:sp.ratio_devoluciones||[],borderColor:C.orange,backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],tension:.3,pointRadius:2,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>c.datasetIndex===0?'  Ingresos: '+feu(c.parsed.y):'  Dev/Ventas: '+fmt(c.parsed.y,1)+'%'}}},
+      scales:{
+        x:{grid:{color:'#181A26'},ticks:{maxRotation:45}},
+        y:{grid:{color:'#181A26'},position:'left',ticks:{callback:v=>feu(v)}},
+        y2:{grid:{display:false},position:'right',ticks:{callback:v=>v+'%'}}
+      }
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KPIs GLOBALES
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.kpis=function(){
+  const g=D.kpis_globales;
+  legend(document.getElementById('lg-evol'),[[C.blue,'Ingresos netos'],[C.orange,'Ingresos brutos']]);
+  new Chart(document.getElementById('c-evol'),{
+    type:'line',
+    data:{labels:g.evolucion.labels,datasets:[
+      {label:'Netos', data:g.evolucion.ingresos_netos, borderColor:C.blue,backgroundColor:'rgba(61,127,212,.06)',borderWidth:2,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4},
+      {label:'Brutos',data:g.evolucion.ingresos_brutos,borderColor:C.orange,backgroundColor:'transparent',borderWidth:1.5,fill:false,tension:.3,pointRadius:0,pointHoverRadius:4,borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+feu(c.parsed.y)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:20}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  const np=g.top_productos.labels.length;
+  document.getElementById('wp-prod').style.height=(np*36+50)+'px';
+  new Chart(document.getElementById('c-prod'),{
+    type:'bar',
+    data:{labels:g.top_productos.labels,datasets:[{data:g.top_productos.ingresos_netos,backgroundColor:C.blue+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  const nt=g.ventas_tienda.labels.length;
+  document.getElementById('wp-tiend').style.height=(nt*36+50)+'px';
+  new Chart(document.getElementById('c-tiend'),{
+    type:'bar',
+    data:{labels:g.ventas_tienda.labels,datasets:[{data:g.ventas_tienda.ingresos_netos,backgroundColor:C.teal+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  // Heatmap estacionalidad
+  const {anios,meses,valores}=g.estacionalidad;
+  const flat=valores.flat().filter(v=>v>0);
+  const maxV=Math.max(...flat),minV=Math.min(...flat);
+  function hcol(v){
+    if(!v)return{bg:'#11131C',tx:'#1A1C28'};
+    const t=(v-minV)/(maxV-minV+1),i=0.1+t*0.9;
+    return{bg:`rgb(${Math.round(28+i*33)},${Math.round(30+i*97)},${Math.round(48+i*164)})`,tx:i>.5?'#E0E2F0':'#8B91B0'};
+  }
+  let h='<thead><tr><th></th>'+meses.map(m=>`<th>${m}</th>`).join('')+'</tr></thead><tbody>';
+  anios.forEach((yr,i)=>{
+    h+=`<tr><td class="hm-yr">${yr}</td>`;
+    for(let m=0;m<12;m++){
+      const v=valores[i][m]||0,{bg,tx}=hcol(v);
+      const lbl=v>0?feu(v).replace('€',''):'';
+      h+=`<td style="background:${bg};color:${tx}" title="${meses[m]} ${yr}: ${feu(v)}">${lbl}</td>`;
+    }
+    h+='</tr>';
+  });
+  document.getElementById('hm').innerHTML=h+'</tbody>';
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEVOLUCIONES
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.devoluciones=function(){
+  const dv=D.devoluciones;
+  document.getElementById('kpi-devol').innerHTML=[
+    ['Total devoluciones',fmt(dv.kpis.total_devoluciones)],
+    ['Importe devuelto',feu(dv.kpis.importe_total)],
+    ['Importe medio',feu(dv.kpis.importe_medio)],
+    ['Unidades devueltas',fmt(dv.kpis.unidades_devueltas)],
+  ].map(([l,v])=>`<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div></div>`).join('');
+
+  legend(document.getElementById('lg-devol'),[[C.red,'Nº devoluciones'],[C.orange,'Importe devuelto']]);
+  new Chart(document.getElementById('c-devol-evol'),{
+    type:'line',
+    data:{labels:dv.evolucion.labels,datasets:[
+      {label:'Nº devol.',data:dv.evolucion.num_devoluciones,borderColor:C.red,backgroundColor:'rgba(229,115,115,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:0,yAxisID:'y'},
+      {label:'Importe',  data:dv.evolucion.importe_devuelto,borderColor:C.orange,backgroundColor:'transparent',borderWidth:1.5,fill:false,tension:.3,pointRadius:0,borderDash:[4,3],yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},
+              y:{grid:{color:'#181A26'},position:'left',ticks:{callback:v=>fmt(v)}},
+              y2:{grid:{display:false},position:'right',ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  const mc=[C.red,C.orange,C.purple,C.teal,C.blue,C.green,'#90A4AE'];
+  new Chart(document.getElementById('c-mot'),{
+    type:'doughnut',
+    data:{labels:dv.motivos.labels,datasets:[{data:dv.motivos.valores,backgroundColor:mc.slice(0,dv.motivos.labels.length),borderColor:'#11131C',borderWidth:3,hoverOffset:5}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return` ${c.label}: ${fmt(c.parsed)} (${fmt(c.parsed/t*100,1)}%)`;}}}}
+    }
+  });
+  const t=dv.motivos.valores.reduce((a,b)=>a+b,0);
+  document.getElementById('lg-mot').innerHTML=dv.motivos.labels.map((l,i)=>
+    `<div class="leg"><div class="leg-sq" style="background:${mc[i]}"></div>${l} <span style="color:var(--text2);margin-left:3px">${fmt(dv.motivos.valores[i]/t*100,1)}%</span></div>`
+  ).join('');
+
+  const nd=dv.top_productos.labels.length;
+  document.getElementById('wp-devprod').style.height=(nd*36+50)+'px';
+  new Chart(document.getElementById('c-devprod'),{
+    type:'bar',
+    data:{labels:dv.top_productos.labels,datasets:[{data:dv.top_productos.num_devoluciones,backgroundColor:C.red+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT}},
+      scales:{x:{grid:{color:'#181A26'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANÁLISIS CLIENTE
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.clientes=function(){
+  const cl=D.clientes;
+
+  // Pareto
+  new Chart(document.getElementById('c-pareto'),{
+    type:'line',
+    data:{labels:cl.pareto.clientes_pct,datasets:[
+      {label:'% CLTV acum.',data:cl.pareto.cltv_cum_pct,borderColor:C.green,backgroundColor:'rgba(43,181,122,.07)',borderWidth:2,fill:true,tension:0,pointRadius:0,pointHoverRadius:4},
+      {label:'80%',data:cl.pareto.clientes_pct.map(()=>80),borderColor:C.orange,borderWidth:1,borderDash:[5,4],pointRadius:0,fill:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>'Top '+fmt(c[0].parsed.x,1)+'% clientes',label:c=>c.datasetIndex===0?'  CLTV acumulado: '+fmt(c.parsed.y,1)+'%':null}}},
+      scales:{
+        x:{type:'linear',min:0,max:100,grid:{color:'#181A26'},ticks:{callback:v=>v+'%'},title:{display:true,text:'% Clientes',color:'#6E7490',font:{size:10}}},
+        y:{min:0,max:100,grid:{color:'#181A26'},ticks:{callback:v=>v+'%'},title:{display:true,text:'% CLTV acumulado',color:'#6E7490',font:{size:10}}}
+      }
+    }
+  });
+
+  // Champions vs Resto — concentración de valor
+  const pm_cl = D.clustering.perfil_medio||{};
+  const dist_cl = D.clustering.distribucion;
+  const ORDER_CL = dist_cl.labels||['Champions','Base','Churned'];
+  const champ_idx = ORDER_CL.indexOf('Champions');
+  const n_champ = dist_cl.valores[champ_idx]||0;
+  const n_total = dist_cl.valores.reduce((a,b)=>a+b,0);
+  const n_resto = n_total - n_champ;
+  const cltv_champ = pm_cl['Champions']?pm_cl['Champions'].cltv*n_champ:0;
+  const cltv_total = ORDER_CL.reduce((s,l,i)=>s+(pm_cl[l]?pm_cl[l].cltv*(dist_cl.valores[i]||0):0),0);
+  const cltv_resto = cltv_total - cltv_champ;
+  new Chart(document.getElementById('c-lorenz'),{
+    type:'bar',
+    data:{
+      labels:['% de clientes','% del CLTV total'],
+      datasets:[
+        {label:'Champions',data:[round2(n_champ/n_total*100), round2(cltv_champ/cltv_total*100)],backgroundColor:CC['Champions']+'CC',borderRadius:6,borderSkipped:false},
+        {label:'Base + Churned',data:[round2(n_resto/n_total*100), round2(cltv_resto/cltv_total*100)],backgroundColor:'#3E4260CC',borderRadius:6,borderSkipped:false},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,labels:{boxWidth:10,padding:14,color:'#8B91B0'}},
+        tooltip:{...TT,callbacks:{label:c=>`  ${c.dataset.label}: ${fmt(c.parsed.y,1)}%`}}
+      },
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},max:100,ticks:{callback:v=>v+'%'}}}
+    }
+  });
+
+  // Customer 360
+  const customers=cl.customer_360;
+  document.getElementById('lbl-total').textContent=fmt(customers.length)+' clientes';
+  let filtered=customers,limit=50;
+  function renderC360(data){
+    document.getElementById('c360-body').innerHTML=data.slice(0,limit).map(c=>{
+      const bc='cl-badge '+(c.cluster_label||'').toLowerCase();
+      return `<tr>
+        <td>${c.nombre||'—'}</td>
+        <td>${feu(c.cltv)}</td><td class="m">${feu(c.ingresos_netos)}</td>
+        <td class="m">${feu(c.aov)}</td><td class="m">${fmt(c.frecuencia_mensual,2)}</td>
+        <td class="m">${fmt(c.recencia_dias)}</td><td class="m">${fmt(c.antiguedad_dias)}</td>
+        <td class="m">${fmt(c.num_ventas)}</td><td class="m">${fmt(c.return_rate,1)}%</td>
+        <td><span class="${bc}">${c.cluster_label||'—'}</span></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('c360-count').textContent='Mostrando '+Math.min(limit,data.length)+' de '+fmt(data.length)+' clientes';
+  }
+  renderC360(filtered);
+  document.getElementById('srch').addEventListener('input',function(){
+    const q=this.value.toLowerCase().trim();
+    filtered=q?customers.filter(c=>c.nombre&&c.nombre.toLowerCase().includes(q)):customers;
+    limit=50;renderC360(filtered);
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLTV
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.cltv=function(){
+  const cv=D.cltv;
+
+  // KPIs CLTV
+  document.getElementById('cltv-kpis').innerHTML=[
+    ['CLTV total',    feu(cv.kpis.total)],
+    ['CLTV medio',    feu(cv.kpis.medio)],
+    ['CLTV mediana',  feu(cv.kpis.mediana)],
+    ['CLTV máximo',   feu(cv.kpis.maximo)],
+    ['Top 20% genera',fmt(cv.kpis.pct_top20,1)+'% CLTV'],
+  ].map(([l,v])=>`<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val" style="font-size:18px">${v}</div></div>`).join('');
+
+  // Histograma log
+  new Chart(document.getElementById('c-cltv-hist'),{
+    type:'bar',
+    data:{labels:cv.histograma_log.labels,datasets:[{data:cv.histograma_log.valores,backgroundColor:C.blue+'BB',borderRadius:2,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.y)+' clientes'}}},
+      scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:9},autoSkip:true,maxTicksLimit:8}},y:{grid:{color:'#181A26'}}}
+    }
+  });
+
+  // Champions vs Base vs Churned CLTV medio
+  const pm2=D.clustering.perfil_medio||{};
+  new Chart(document.getElementById('c-cltv-seg'),{
+    type:'bar',
+    data:{labels:ORDER,datasets:[{
+      data:ORDER.map(l=>pm2[l]?pm2[l].cltv:0),
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),borderRadius:5,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  CLTV medio: ${feu(c.parsed.y)}`}}},
+      scales:{x:{grid:{display:false}},y:{type:'logarithmic',grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  // Scatter CLTV vs Antigüedad
+  legend(document.getElementById('lg-sc-ant'),ORDER.map(l=>[CC[l],l,true]));
+  new Chart(document.getElementById('c-sc-ant'),{
+    type:'scatter',
+    data:{datasets:ORDER.map(l=>({
+      label:l,
+      data:cv.scatter_antiguedad.filter(p=>p.c===l).map(p=>({x:p.x,y:p.y})),
+      backgroundColor:CC[l]+'66',pointRadius:3,pointHoverRadius:5,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  ${c.dataset.label} · Antigüedad: ${fmt(c.parsed.x)}d · CLTV: ${feu(c.parsed.y)}`}}},
+      scales:{
+        x:{grid:{color:'#181A26'},title:{display:true,text:'Antigüedad (días)',color:'#6E7490',font:{size:10}}},
+        y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)},title:{display:true,text:'CLTV (€)',color:'#6E7490',font:{size:10}}}
+      }
+    }
+  });
+
+  // Scatter CLTV vs Recencia
+  legend(document.getElementById('lg-sc-rec'),ORDER.map(l=>[CC[l],l,true]));
+  new Chart(document.getElementById('c-sc-rec'),{
+    type:'scatter',
+    data:{datasets:ORDER.map(l=>({
+      label:l,
+      data:cv.scatter_recencia.filter(p=>p.c===l).map(p=>({x:p.x,y:p.y})),
+      backgroundColor:CC[l]+'66',pointRadius:3,pointHoverRadius:5,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  ${c.dataset.label} · Recencia: ${fmt(c.parsed.x)}d · CLTV: ${feu(c.parsed.y)}`}}},
+      scales:{
+        x:{grid:{color:'#181A26'},title:{display:true,text:'Recencia (días)',color:'#6E7490',font:{size:10}}},
+        y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)},title:{display:true,text:'CLTV (€)',color:'#6E7490',font:{size:10}}}
+      }
+    }
+  });
+
+  // Donuts: % clientes vs % CLTV
+  const dist2 = D.clustering.distribucion;
+  const donutOpts = (data, labels) => ({
+    type:'doughnut',
+    data:{labels, datasets:[{
+      data,
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),
+      borderColor:'#0B0C12', borderWidth:3, hoverOffset:6
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{display:false},
+        tooltip:{...TT,callbacks:{label:c=>`  ${c.label}: ${fmt(c.parsed,1)}%`}}}
+    }
+  });
+  new Chart(document.getElementById('c-donut-cli'),  donutOpts(dist2.pct,      ORDER));
+  new Chart(document.getElementById('c-donut-cltv'), donutOpts(dist2.pct_cltv, ORDER));
+  legend(document.getElementById('lg-donuts'), ORDER.map(l=>[CC[l],l,true]));
+
+  // RFM matrix
+  const rfm=cv.rfm;
+  const rls=rfm.r_labels, fls=rfm.f_labels;
+  const rfmMap={};
+  rfm.data.forEach(d=>rfmMap[d.recencia+'|'+d.frecuencia]=d.cltv_medio);
+  const allVals=Object.values(rfmMap);
+  const rfmMin=Math.min(...allVals), rfmMax=Math.max(...allVals);
+  function rfmCol(v){
+    const t=(v-rfmMin)/(rfmMax-rfmMin+1);
+    const r=Math.round(43+t*(229-43)), g=Math.round(181+t*(115-181)), b=Math.round(122+t*(115-122));
+    return{bg:`rgba(${r},${g},${b},0.75)`,tx:t>.5?'#0B0C12':'#E0E2F0'};
+  }
+  let rfmHtml=`<div class="rfm-wrap">
+    <div class="rfm-head"></div>${fls.map(f=>`<div class="rfm-head">Frec. ${f}</div>`).join('')}`;
+  rls.forEach(r=>{
+    rfmHtml+=`<div class="rfm-rlbl">${r}</div>`;
+    fls.forEach(f=>{
+      const v=rfmMap[r+'|'+f]||0,{bg,tx}=rfmCol(v);
+      rfmHtml+=`<div class="rfm-cell" style="background:${bg};color:${tx}" title="${r} × Frec.${f}: ${feu(v)}">${feu(v)}</div>`;
+    });
+  });
+  rfmHtml+='</div>';
+  document.getElementById('rfm-wrap').innerHTML=rfmHtml;
+
+  // Top 20
+  document.getElementById('top20-body').innerHTML=cv.top20.map((c,i)=>{
+    const bc='cl-badge '+(c.cluster_label||'').toLowerCase();
+    return `<tr>
+      <td class="m">${i+1}</td>
+      <td>${c.nombre||'—'}</td>
+      <td>${feu(c.cltv)}</td>
+      <td class="m">${feu(c.aov)}</td>
+      <td class="m">${fmt(c.num_ventas)}</td>
+      <td class="m">${fmt(c.recencia_dias)}d</td>
+      <td><span class="${bc}">${c.cluster_label||'—'}</span></td>
+    </tr>`;
+  }).join('');
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLUSTERING
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.clustering=function(){
+  const cl=D.clustering;
+  const pm=cl.perfil_medio||{};
+  const dist=cl.distribucion;
+
+  // KPI cards por cluster
+  document.getElementById('cl-kpi-cards').innerHTML=ORDER.map(label=>{
+    const n=dist.valores[ORDER.indexOf(label)];
+    const pct=dist.pct[ORDER.indexOf(label)];
+    const pctc=dist.pct_cltv[ORDER.indexOf(label)];
+    const cls=label.toLowerCase();
+    return `<div class="cl-card ${cls}">
+      <div class="cl-badge ${cls}">${label}</div>
+      <div class="cl-stat"><span class="cl-stat-lbl">Clientes</span><span class="cl-stat-val">${fmt(n)} (${fmt(pct,1)}%)</span></div>
+      <div class="cl-stat"><span class="cl-stat-lbl">CLTV medio</span><span class="cl-stat-val">${feu(pm[label]?pm[label].cltv:0)}</span></div>
+      <div class="cl-stat"><span class="cl-stat-lbl">% CLTV total</span><span class="cl-stat-val">${fmt(pctc,1)}%</span></div>
+    </div>`;
+  }).join('');
+
+  // Return Rate por cluster
+  new Chart(document.getElementById('c-cl-rr'),{
+    type:'bar',
+    data:{labels:ORDER,datasets:[{
+      data:ORDER.map(l=>pm[l]?round2(pm[l].return_rate):0),
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),borderRadius:6,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  Return Rate: ${fmt(c.parsed.y,1)}%`}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'},max:100}}
+    }
+  });
+
+  // Nº ventas medias
+  new Chart(document.getElementById('c-cl-ventas'),{
+    type:'bar',
+    data:{labels:ORDER,datasets:[{
+      data:ORDER.map(l=>pm[l]?round2(pm[l].num_ventas):0),
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),borderRadius:6,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  Ventas medias: ${fmt(c.parsed.y,1)}`}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'}}}
+    }
+  });
+
+  // CLTV escala logarítmica
+  new Chart(document.getElementById('c-cl-cltv'),{
+    type:'bar',
+    data:{labels:ORDER,datasets:[{
+      data:ORDER.map(l=>pm[l]?Math.max(pm[l].cltv,1):1),
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),borderRadius:6,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  CLTV medio: ${feu(c.parsed.y)}`}}},
+      scales:{x:{grid:{display:false}},y:{type:'logarithmic',grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  // AOV medio
+  new Chart(document.getElementById('c-cl-aov'),{
+    type:'bar',
+    data:{labels:ORDER,datasets:[{
+      data:ORDER.map(l=>pm[l]?round2(pm[l].aov):0),
+      backgroundColor:ORDER.map(l=>CC[l]+'CC'),borderRadius:6,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  AOV medio: ${feu(c.parsed.y)}`}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  // PCA scatter
+  const vex=cl.varianza_explicada;
+  document.getElementById('pca-stats').innerHTML=
+    `<div class="pca-s">PC1 <b>${vex.pc1}%</b></div>
+     <div class="pca-s">PC2 <b>${vex.pc2}%</b></div>
+     <div class="pca-s">Total varianza explicada <b>${vex.total}%</b></div>`;
+  legend(document.getElementById('lg-scatter'),ORDER.map(l=>[CC[l],l,true]));
+  new Chart(document.getElementById('c-scatter'),{
+    type:'scatter',
+    data:{datasets:ORDER.map(l=>({
+      label:l,
+      data:cl.scatter.filter(p=>p.cluster===l).map(p=>({x:p.x,y:p.y})),
+      backgroundColor:CC[l]+'60',pointRadius:3.5,pointHoverRadius:5,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  ${c.dataset.label}: (${fmt(c.parsed.x,2)}, ${fmt(c.parsed.y,2)})`}}},
+      scales:{
+        x:{grid:{color:'#181A26'},title:{display:true,text:`PC1 (${vex.pc1}% varianza)`,color:'#6E7490',font:{size:10}}},
+        y:{grid:{color:'#181A26'},title:{display:true,text:`PC2 (${vex.pc2}% varianza)`,color:'#6E7490',font:{size:10}}}
+      }
+    }
+  });
+
+  // Tabla perfil comparativo
+  const metricas=[
+    ['CLTV medio (€)',       l=>feu(pm[l]?pm[l].cltv:0)],
+    ['Ingresos netos medios',l=>feu(pm[l]?pm[l].ingresos_netos:0)],
+    ['AOV medio (€)',        l=>feu(pm[l]?pm[l].aov:0)],
+    ['Nº ventas medias',     l=>fmt(pm[l]?pm[l].num_ventas:0,1)],
+    ['Return Rate medio',    l=>fmt(pm[l]?pm[l].return_rate:0,1)+'%'],
+    ['Recencia media (días)', l=>fmt(pm[l]?pm[l].recencia_dias:0,0)],
+    ['Antigüedad media (días)',l=>fmt(pm[l]?pm[l].antiguedad_dias:0,0)],
+    ['Margen % medio',       l=>fmt(pm[l]?pm[l].margen_pct_medio:0,1)+'%'],
+  ];
+  document.getElementById('cl-perfil-body').innerHTML=metricas.map(([lbl,fn])=>
+    `<tr><td style="color:var(--text2);font-size:11px">${lbl}</td>${ORDER.map(l=>`<td style="font-weight:500;color:${CC[l]}">${fn(l)}</td>`).join('')}</tr>`
+  ).join('');
+};
+
+function round2(v){return Math.round(v*100)/100;}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCTOS
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.productos=function(){
+  const p=D.productos;
+  const PCOLS=[C.blue,C.teal,C.green,C.orange,C.purple,C.red,'#FFD54F','#4DB6AC','#F48FB1','#CE93D8','#80CBC4','#FFCC02','#81D4FA','#A5D6A7','#FFAB91'];
+  const prods=Object.keys(p.selector||{});
+  let chartProdEvol=null;
+  let activeProd=prods[0];
+  let selectedProds=new Set([prods[0],prods[1]||prods[0]]);
+
+  // Tabs
+  document.getElementById('prod-tabs').innerHTML=prods.map((prod,i)=>
+    `<div class="prod-tab" data-prod="${prod}"
+      style="padding:5px 12px;border-radius:6px;font-size:10.5px;font-weight:500;cursor:pointer;
+             background:${prod===activeProd?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${prod===activeProd?C.blue:'var(--text2)'};
+             border:1px solid ${prod===activeProd?C.blue:'var(--border)'};transition:all .12s">
+      ${prod}
+    </div>`
+  ).join('');
+
+  document.querySelectorAll('.prod-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      activeProd=tab.dataset.prod;
+      document.querySelectorAll('.prod-tab').forEach(t2=>{
+        const act=t2.dataset.prod===activeProd;
+        t2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+        t2.style.color=act?C.blue:'var(--text2)';
+        t2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+      });
+      renderProd(activeProd);
+    });
+  });
+
+  function renderProd(prod){
+    const s=p.selector[prod];
+    if(!s) return;
+    const col=PCOLS[prods.indexOf(prod)%PCOLS.length];
+
+    document.getElementById('prod-kpis').innerHTML=[
+      ['Ingresos netos', feu(s.ingresos)],
+      ['Unidades vendidas', fmt(s.unidades)],
+      ['Margen %', fmt(s.margen,1)+'%'],
+      ['Devoluciones', fmt(s.devoluciones)],
+    ].map(([l,v])=>`<div class="kpi-card" style="border-top:2px solid ${col}">
+      <div class="kpi-lbl">${l}</div>
+      <div class="kpi-val" style="font-size:18px">${v}</div>
+    </div>`).join('');
+
+    document.getElementById('prod-evol-title').textContent=`Evolución mensual — ${prod}`;
+    if(chartProdEvol) chartProdEvol.destroy();
+    chartProdEvol=new Chart(document.getElementById('c-prod-evol'),{
+      type:'line',
+      data:{labels:p.evol_labels,datasets:[{
+        data:s.evolucion,borderColor:col,backgroundColor:col+'15',
+        borderWidth:2.5,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.y)}}},
+        scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+      }
+    });
+
+    document.getElementById('prod-ficha').innerHTML=[
+      ['Categoría', s.categoria],
+      ['Marca',     s.marca],
+      ['Nº ventas', fmt(s.num_ventas)],
+      ['Ingresos netos', feu(s.ingresos)],
+      ['Margen %',  fmt(s.margen,1)+'%'],
+      ['Devoluciones', fmt(s.devoluciones)],
+    ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="color:var(--text2)">${l}</span>
+      <span style="font-weight:500">${v}</span>
+    </div>`).join('');
+  }
+  renderProd(activeProd);
+
+  // Comparador chips
+  document.getElementById('prod-compare-chips').innerHTML=prods.map(prod=>{
+    const active=selectedProds.has(prod);
+    return`<div class="prod-compare-chip" data-prod="${prod}"
+      style="padding:4px 11px;border-radius:5px;font-size:10.5px;font-weight:500;cursor:pointer;
+             background:${active?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${active?C.blue:'var(--text2)'};
+             border:1px solid ${active?C.blue:'var(--border)'};transition:all .12s">${prod}</div>`;
+  }).join('');
+
+  function renderProdCompare(){
+    const sel=[...selectedProds];
+    document.getElementById('prod-compare-cards').style.gridTemplateColumns=`repeat(${sel.length},1fr)`;
+    document.getElementById('prod-compare-cards').innerHTML=sel.map((prod,i)=>{
+      const s=p.selector[prod];
+      const col=PCOLS[prods.indexOf(prod)%PCOLS.length];
+      return`<div style="background:var(--elevated);border:1px solid var(--border);border-top:2px solid ${col};border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:10px">${prod}</div>
+        ${[['Ingresos',feu(s.ingresos)],['Margen %',fmt(s.margen,1)+'%'],['Unidades',fmt(s.unidades)],['Devoluciones',fmt(s.devoluciones)],['Categoría',s.categoria],['Marca',s.marca]]
+          .map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px">
+            <span style="color:var(--text2)">${l}</span><span style="font-weight:600">${v}</span>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+  renderProdCompare();
+
+  document.querySelectorAll('.prod-compare-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const prod=chip.dataset.prod;
+      if(selectedProds.has(prod)){if(selectedProds.size>1)selectedProds.delete(prod);}
+      else if(selectedProds.size<4) selectedProds.add(prod);
+      document.querySelectorAll('.prod-compare-chip').forEach(c2=>{
+        const act=selectedProds.has(c2.dataset.prod);
+        c2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+        c2.style.color=act?C.blue:'var(--text2)';
+        c2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+      });
+      renderProdCompare();
+    });
+  });
+
+  // Top5 ingresos
+  const t5=p.top_ingresos.labels.slice(0,5), t5v=p.top_ingresos.ingresos.slice(0,5);
+  new Chart(document.getElementById('c-prod-top5'),{
+    type:'bar',
+    data:{labels:t5,datasets:[{data:t5v,backgroundColor:C.blue+'BB',borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+  // Top5 margen
+  const m5=p.top_margen.labels.slice(0,5), m5v=p.top_margen.margen.slice(0,5);
+  new Chart(document.getElementById('c-prod-margen5'),{
+    type:'bar',
+    data:{labels:m5,datasets:[{data:m5v,backgroundColor:C.green+'BB',borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.x,1)+'%'}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MARCAS & CATEGORÍAS
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.marcas=function(){
+  const mc=D.marcas_categorias;
+  const MCOLS=[C.blue,C.teal,C.green,C.orange,C.purple,C.red,'#FFD54F','#4DB6AC','#F48FB1','#CE93D8','#80CBC4','#FFCC02'];
+  const marcasList=Object.keys(mc.selector||{});
+  let chartMarcaEvol=null;
+  let activeMarca=marcasList[0];
+  let selectedMarcas=new Set([marcasList[0],marcasList[1]||marcasList[0]]);
+
+  document.getElementById('marca-tabs').innerHTML=marcasList.map((m,i)=>
+    `<div class="marca-tab" data-marca="${m}"
+      style="padding:5px 12px;border-radius:6px;font-size:10.5px;font-weight:500;cursor:pointer;
+             background:${m===activeMarca?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${m===activeMarca?C.blue:'var(--text2)'};
+             border:1px solid ${m===activeMarca?C.blue:'var(--border)'};transition:all .12s">${m}</div>`
+  ).join('');
+
+  document.querySelectorAll('.marca-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      activeMarca=tab.dataset.marca;
+      document.querySelectorAll('.marca-tab').forEach(t2=>{
+        const act=t2.dataset.marca===activeMarca;
+        t2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+        t2.style.color=act?C.blue:'var(--text2)';
+        t2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+      });
+      renderMarca(activeMarca);
+      if(typeof renderDonut==='function') renderDonut(activeMarca);
+    });
+  });
+
+  function renderMarca(marca){
+    const s=mc.selector[marca]; if(!s) return;
+    const col=MCOLS[marcasList.indexOf(marca)%MCOLS.length];
+    document.getElementById('marca-kpis').innerHTML=[
+      ['Ingresos netos',feu(s.ingresos)],['Nº ventas',fmt(s.num_ventas)],
+      ['Margen %',fmt(s.margen,1)+'%'],['Devoluciones',fmt(s.devoluciones)],
+    ].map(([l,v])=>`<div class="kpi-card" style="border-top:2px solid ${col}">
+      <div class="kpi-lbl">${l}</div><div class="kpi-val" style="font-size:18px">${v}</div>
+    </div>`).join('');
+    document.getElementById('marca-evol-title').textContent=`Evolución mensual — ${marca}`;
+    if(chartMarcaEvol) chartMarcaEvol.destroy();
+    chartMarcaEvol=new Chart(document.getElementById('c-marca-evol'),{
+      type:'line',
+      data:{labels:mc.evol_labels,datasets:[{data:s.evolucion,borderColor:col,backgroundColor:col+'15',borderWidth:2.5,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.y)}}},
+        scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+      }
+    });
+  }
+  renderMarca(activeMarca);
+
+  document.getElementById('marca-compare-chips').innerHTML=marcasList.map(m=>{
+    const active=selectedMarcas.has(m);
+    return`<div class="marca-compare-chip" data-marca="${m}"
+      style="padding:4px 11px;border-radius:5px;font-size:10.5px;font-weight:500;cursor:pointer;
+             background:${active?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${active?C.blue:'var(--text2)'};
+             border:1px solid ${active?C.blue:'var(--border)'};transition:all .12s">${m}</div>`;
+  }).join('');
+
+  function renderMarcaCompare(){
+    const sel=[...selectedMarcas];
+    document.getElementById('marca-compare-cards').style.gridTemplateColumns=`repeat(${sel.length},1fr)`;
+    document.getElementById('marca-compare-cards').innerHTML=sel.map(marca=>{
+      const s=mc.selector[marca];
+      const col=MCOLS[marcasList.indexOf(marca)%MCOLS.length];
+      return`<div style="background:var(--elevated);border:1px solid var(--border);border-top:2px solid ${col};border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:10px">${marca}</div>
+        ${[['Ingresos',feu(s.ingresos)],['Nº ventas',fmt(s.num_ventas)],['Margen %',fmt(s.margen,1)+'%'],['Productos',fmt(s.num_productos)],['Devoluciones',fmt(s.devoluciones)]]
+          .map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px">
+            <span style="color:var(--text2)">${l}</span><span style="font-weight:600">${v}</span></div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+  renderMarcaCompare();
+
+  document.querySelectorAll('.marca-compare-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const m=chip.dataset.marca;
+      if(selectedMarcas.has(m)){if(selectedMarcas.size>1)selectedMarcas.delete(m);}
+      else if(selectedMarcas.size<4) selectedMarcas.add(m);
+      document.querySelectorAll('.marca-compare-chip').forEach(c2=>{
+        const act=selectedMarcas.has(c2.dataset.marca);
+        c2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+        c2.style.color=act?C.blue:'var(--text2)';
+        c2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+      });
+      renderMarcaCompare();
+    });
+  });
+
+  let chartDonut=null;
+  function renderDonut(marca){
+    const catData=mc.cat_x_marca&&mc.cat_x_marca[marca]?mc.cat_x_marca[marca]:mc.categorias;
+    document.getElementById('cat-ing-title').textContent=`Categorías — ${marca}`;
+    if(chartDonut) chartDonut.destroy();
+    chartDonut=new Chart(document.getElementById('c-cat-ing'),{
+      type:'doughnut',
+      data:{labels:catData.labels,datasets:[{
+        data:catData.valores||catData.ingresos,
+        backgroundColor:MCOLS.slice(0,catData.labels.length),
+        borderColor:'#0B0C12',borderWidth:3,hoverOffset:5
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+        plugins:{legend:{display:true,position:'right',labels:{boxWidth:10,padding:10,color:'#8B91B0',font:{size:10}}},
+          tooltip:{...TT,callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return` ${c.label}: ${feu(c.parsed)} (${fmt(c.parsed/t*100,1)}%)`;}}}}
+      }
+    });
+  }
+  renderDonut(activeMarca);
+
+  const cats=mc.cat_evol.categorias;
+  legend(document.getElementById('lg-cat-evol'),cats.map((c,i)=>[MCOLS[i],c]));
+  new Chart(document.getElementById('c-cat-evol'),{
+    type:'bar',
+    data:{labels:mc.cat_evol.anios,datasets:cats.map((cat,i)=>({label:cat,data:mc.cat_evol.valores[cat]||[],backgroundColor:MCOLS[i]+'BB',borderRadius:3}))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+feu(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENTABILIDAD
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.rentabilidad=function(){
+  const r=D.rentabilidad;
+
+  new Chart(document.getElementById('c-r-mrg-evol'),{
+    type:'line',
+    data:{labels:r.evolucion.labels,datasets:[
+      {label:'Margen %',data:r.evolucion.margen_pct,borderColor:C.green,backgroundColor:'rgba(43,181,122,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:0,yAxisID:'y'},
+      {label:'Ingresos netos',data:r.evolucion.ingresos_netos,borderColor:C.blue,backgroundColor:'transparent',borderWidth:1.5,fill:false,tension:.3,pointRadius:0,borderDash:[4,3],yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{boxWidth:10,padding:14,color:'#7A7F9A'}},tooltip:{...TT}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},
+              y:{grid:{color:'#181A26'},position:'left',ticks:{callback:v=>v+'%'}},
+              y2:{grid:{display:false},position:'right',ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  new Chart(document.getElementById('c-r-anual'),{
+    type:'bar',
+    data:{labels:r.anual.labels,datasets:[
+      {label:'Ingresos netos',data:r.anual.ingresos_netos,backgroundColor:C.blue+'BB',borderRadius:4,borderSkipped:false},
+      {label:'Coste total',   data:r.anual.coste_total,   backgroundColor:C.red+'88', borderRadius:4,borderSkipped:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{boxWidth:10,padding:14,color:'#7A7F9A'}},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+feu(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  const nc=r.por_categoria.labels.length;
+  document.getElementById('wp-r-cat').style.height=(nc*34+50)+'px';
+  new Chart(document.getElementById('c-r-cat'),{
+    type:'bar',
+    data:{labels:r.por_categoria.labels,datasets:[{data:r.por_categoria.margen_pct,backgroundColor:C.teal+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.x,1)+'%'}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  // Evolución margen % mensual
+  new Chart(document.getElementById('c-r-bajo'),{
+    type:'line',
+    data:{labels:r.evolucion.labels,datasets:[{
+      label:'Margen %',
+      data:r.evolucion.margen_pct,
+      borderColor:C.green,backgroundColor:'rgba(43,181,122,.07)',
+      borderWidth:2.5,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`  Margen: ${fmt(c.parsed.y,1)}%`}}},
+      scales:{
+        x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},
+        y:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'}}
+      }
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TIENDAS
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.tiendas=function(){
+  const t=D.tiendas;
+  const TCOLS=[C.blue,C.teal,C.green,C.orange,C.purple,C.red,'#FFD54F','#4DB6AC','#F48FB1','#CE93D8','#80CBC4','#FFCC02','#81D4FA','#A5D6A7','#FFAB91','#80DEEA','#B39DDB','#EF9A9A','#A5D6A7','#FFF176'];
+
+  let chartSingleEvol=null, chartRanking=null;
+  let activeTienda=t.kpis.labels[0];
+
+  // Tabs
+  document.getElementById('tienda-tabs').innerHTML=t.kpis.labels.map((tienda,i)=>
+    `<div class="tienda-tab ${tienda===activeTienda?'active':''}"
+      data-tienda="${tienda}"
+      style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;
+             background:${tienda===activeTienda?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${tienda===activeTienda?C.blue:'var(--text2)'};
+             border:1px solid ${tienda===activeTienda?C.blue:'var(--border)'};
+             transition:all .12s">
+      ${tienda}
+    </div>`
+  ).join('');
+
+  document.querySelectorAll('.tienda-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      activeTienda=tab.dataset.tienda;
+      document.querySelectorAll('.tienda-tab').forEach(t2=>{
+        const active=t2.dataset.tienda===activeTienda;
+        t2.style.background=active?'rgba(61,127,212,.15)':'var(--surface)';
+        t2.style.color=active?C.blue:'var(--text2)';
+        t2.style.border=`1px solid ${active?C.blue:'var(--border)'}`;
+      });
+      renderTienda(activeTienda);
+    });
+  });
+
+  // Media de red
+  const mediaIngresos = t.kpis.ingresos.reduce((a,b)=>a+b,0)/t.kpis.labels.length;
+  const mediaAOV      = t.kpis.aov.reduce((a,b)=>a+b,0)/t.kpis.labels.length;
+
+  function renderTienda(tienda){
+    const i=t.kpis.labels.indexOf(tienda);
+    const col=TCOLS[i%TCOLS.length];
+
+    // KPIs
+    document.getElementById('t-kpi-single').innerHTML=[
+      ['Ingresos netos',  feu(t.kpis.ingresos[i])],
+      ['Nº ventas',       fmt(t.kpis.num_ventas[i])],
+      ['AOV medio',       feu(t.kpis.aov[i])],
+      ['Return Rate',     fmt(t.kpis.return_rate[i],1)+'%'],
+    ].map(([l,v])=>`<div class="kpi-card" style="border-top:2px solid ${col}">
+      <div class="kpi-lbl">${l}</div>
+      <div class="kpi-val" style="font-size:19px">${v}</div>
+    </div>`).join('');
+
+    // Evolución individual
+    document.getElementById('t-evol-title').textContent=`Evolución mensual — ${tienda}`;
+    if(chartSingleEvol) chartSingleEvol.destroy();
+    chartSingleEvol=new Chart(document.getElementById('c-t-single-evol'),{
+      type:'line',
+      data:{labels:t.evolucion.labels,datasets:[{
+        data:t.evolucion.tiendas[tienda]||[],
+        borderColor:col,backgroundColor:col+'15',borderWidth:2.5,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4,
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.y)}}},
+        scales:{x:{grid:{color:'#181A26'},ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:18}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+      }
+    });
+
+    // Top productos
+    const prods=(t.top_productos[tienda]||[]);
+    document.getElementById('t-single-prod').innerHTML=prods.map((p,j)=>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:12px;font-weight:500">${j+1}. ${p.producto}</div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:${col}">${feu(p.ingresos)}</div>
+      </div>`
+    ).join('');
+
+    // Ranking comparativo
+    const sorted=[...t.kpis.labels.map((l,idx)=>({label:l,val:t.kpis.ingresos[idx],idx}))].sort((a,b)=>b.val-a.val);
+    const bgs=sorted.map(s=>s.label===tienda?col+'EE':col+'33');
+    if(chartRanking) chartRanking.destroy();
+    chartRanking=new Chart(document.getElementById('c-t-ranking'),{
+      type:'bar',
+      data:{labels:sorted.map(s=>s.label),datasets:[
+        {label:'Ingresos',data:sorted.map(s=>s.val),backgroundColor:bgs,borderRadius:4,borderSkipped:false},
+        {label:'Media red',data:sorted.map(()=>mediaIngresos),type:'line',borderColor:C.orange,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>c.datasetIndex===0?`  ${c.label}: ${feu(c.parsed.y)}`:`  Media red: ${feu(c.parsed.y)}`}}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:30}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+      }
+    });
+  }
+
+  // Render primera tienda
+  renderTienda(activeTienda);
+
+  // Top 5 y Bottom 5
+  const sorted=[...t.kpis.labels.map((l,i)=>({label:l,val:t.kpis.ingresos[i],i}))].sort((a,b)=>b.val-a.val);
+  const top5=sorted.slice(0,5), bot5=sorted.slice(-5).reverse();
+
+  new Chart(document.getElementById('c-t-top5'),{
+    type:'bar',
+    data:{labels:top5.map(s=>s.label),datasets:[{data:top5.map(s=>s.val),backgroundColor:C.green+'BB',borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  new Chart(document.getElementById('c-t-bot5'),{
+    type:'bar',
+    data:{labels:bot5.map(s=>s.label),datasets:[{data:bot5.map(s=>s.val),backgroundColor:C.orange+'BB',borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  // Comparador — tarjetas de métricas
+  let selected=new Set([t.kpis.labels[0],t.kpis.labels[1]]);
+
+  function metricCard(tienda, col){
+    const i=t.kpis.labels.indexOf(tienda);
+    return `<div style="background:var(--elevated);border:1px solid var(--border);border-top:2px solid ${col};border-radius:8px;padding:12px">
+      <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:10px">${tienda}</div>
+      ${[
+        ['Ingresos netos', feu(t.kpis.ingresos[i])],
+        ['AOV medio',      feu(t.kpis.aov[i])],
+        ['Return Rate',    fmt(t.kpis.return_rate[i],1)+'%'],
+        ['Nº ventas',      fmt(t.kpis.num_ventas[i])],
+        ['Margen %',       fmt(t.kpis.margen_pct[i],1)+'%'],
+      ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--text2)">${l}</span>
+        <span style="font-weight:600">${v}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  function renderCompare(){
+    const sel=[...selected];
+    const cols=sel.map(tienda=>TCOLS[t.kpis.labels.indexOf(tienda)%TCOLS.length]);
+    document.getElementById('compare-checks').querySelectorAll('.compare-chip').forEach(c2=>{
+      const act=selected.has(c2.dataset.tienda);
+      c2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+      c2.style.color=act?C.blue:'var(--text2)';
+      c2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+    });
+    const container=document.getElementById('compare-cards');
+    container.style.gridTemplateColumns=`repeat(${sel.length},1fr)`;
+    container.innerHTML=sel.map((tienda,i)=>metricCard(tienda,cols[i])).join('');
+  }
+
+  document.getElementById('compare-checks').innerHTML=t.kpis.labels.map(tienda=>{
+    const active=selected.has(tienda);
+    return`<div class="compare-chip ${active?'active':''}" data-tienda="${tienda}"
+      style="padding:4px 11px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;
+             background:${active?'rgba(61,127,212,.15)':'var(--surface)'};
+             color:${active?C.blue:'var(--text2)'};
+             border:1px solid ${active?C.blue:'var(--border)'};
+             transition:all .12s">${tienda}</div>`;
+  }).join('');
+
+  document.querySelectorAll('.compare-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const tienda=chip.dataset.tienda;
+      if(selected.has(tienda)){
+        if(selected.size>1) selected.delete(tienda);
+      } else {
+        if(selected.size<4) selected.add(tienda);
+      }
+      document.querySelectorAll('.compare-chip').forEach(c2=>{
+        const act=selected.has(c2.dataset.tienda);
+        c2.style.background=act?'rgba(61,127,212,.15)':'var(--surface)';
+        c2.style.color=act?C.blue:'var(--text2)';
+        c2.style.border=`1px solid ${act?C.blue:'var(--border)'}`;
+      });
+      renderCompare();
+    });
+  });
+
+  renderCompare();
+
+  // AOV vs Return Rate
+  new Chart(document.getElementById('c-t-aov-rr'),{
+    type:'bar',
+    data:{labels:t.kpis.labels,datasets:[
+      {label:'AOV (€)',         data:t.kpis.aov,        backgroundColor:C.blue+'BB',  borderRadius:3,borderSkipped:false,yAxisID:'y'},
+      {label:'Return Rate (%)', data:t.kpis.return_rate, backgroundColor:C.orange+'BB',borderRadius:3,borderSkipped:false,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{boxWidth:10,padding:14,color:'#7A7F9A'}},tooltip:{...TT}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:30}},
+              y:{grid:{color:'#181A26'},position:'left',ticks:{callback:v=>feu(v)}},
+              y2:{grid:{display:false},position:'right',ticks:{callback:v=>v+'%'}}}
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TENDENCIAS
+// ═══════════════════════════════════════════════════════════════════════════
+PAGES.tendencias=function(){
+  const t=D.tendencias;
+  const YCOLS=[C.blue,C.green,C.orange,C.purple,C.teal,C.red];
+  const anios=t.yoy.anios;
+
+  legend(document.getElementById('lg-yoy'),anios.map((a,i)=>[YCOLS[i]||C.blue,String(a)]));
+  new Chart(document.getElementById('c-yoy'),{
+    type:'line',
+    data:{labels:t.yoy.meses,datasets:anios.map((a,i)=>({
+      label:String(a),
+      data:t.yoy.valores[String(a)]||[],
+      borderColor:YCOLS[i]||C.blue,backgroundColor:'transparent',
+      borderWidth:2,pointRadius:4,tension:.3,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+feu(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  new Chart(document.getElementById('c-crec-anual'),{
+    type:'bar',
+    data:{labels:t.crecimiento_anual.labels,datasets:[{
+      data:t.crecimiento_anual.ingresos_netos,
+      backgroundColor:C.blue+'BB',borderRadius:5,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}}}
+    }
+  });
+
+  new Chart(document.getElementById('c-cli-anual'),{
+    type:'bar',
+    data:{labels:t.crecimiento_anual.labels,datasets:[{
+      data:t.crecimiento_anual.clientes_activos,
+      backgroundColor:C.teal+'BB',borderRadius:5,borderSkipped:false
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.y)+' clientes'}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#181A26'},ticks:{callback:v=>fmt(v)}}}
+    }
+  });
+
+  const nc=t.prod_crecimiento.labels.length;
+  document.getElementById('wp-t-crec').style.height=(nc*34+50)+'px';
+  new Chart(document.getElementById('c-t-crec'),{
+    type:'bar',
+    data:{labels:t.prod_crecimiento.labels,datasets:[{data:t.prod_crecimiento.pct,backgroundColor:C.green+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.x,1)+'%'}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  const nd=t.prod_decrecimiento.labels.length;
+  document.getElementById('wp-t-decr').style.height=(nd*34+50)+'px';
+  new Chart(document.getElementById('c-t-decr'),{
+    type:'bar',
+    data:{labels:t.prod_decrecimiento.labels,datasets:[{data:t.prod_decrecimiento.pct,backgroundColor:C.red+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+fmt(c.parsed.x,1)+'%'}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  const nb=t.mejores_meses.labels.length;
+  document.getElementById('wp-t-best').style.height=(nb*34+50)+'px';
+  new Chart(document.getElementById('c-t-best'),{
+    type:'bar',
+    data:{labels:t.mejores_meses.labels,datasets:[{data:t.mejores_meses.ingresos,backgroundColor:C.green+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+
+  const nw=t.peores_meses.labels.length;
+  document.getElementById('wp-t-worst').style.height=(nw*34+50)+'px';
+  new Chart(document.getElementById('c-t-worst'),{
+    type:'bar',
+    data:{labels:t.peores_meses.labels,datasets:[{data:t.peores_meses.ingresos,backgroundColor:C.orange+'BB',borderRadius:3,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>'  '+feu(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#181A26'},ticks:{callback:v=>feu(v)}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+};
+
+// Arrancar primera página
+inited['ejecutivo']=true;
+</script>
+</body>
+</html>

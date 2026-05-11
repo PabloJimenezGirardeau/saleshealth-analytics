@@ -1,0 +1,172 @@
+// Modelo ER — saleshealth operacional
+// Generado automáticamente desde PostgreSQL
+// Importar en https://dbdiagram.io/d
+
+// ── ERP ──────────────────────────────────────────
+Table product {
+  product_id integer [pk]
+  name varchar [not null]
+  category varchar
+  manufacturer varchar
+  price decimal [not null]
+  created_at timestamp
+}
+
+Table central_product {
+  product_id integer [pk]
+  name varchar [not null]
+  category_id integer
+  brand_id integer
+  sku varchar
+  barcode varchar
+  unit_cost decimal
+  unit_price decimal
+}
+
+Table brand {
+  brand_id integer [pk]
+  name varchar [not null]
+  country varchar
+  website varchar
+}
+
+Table category {
+  category_id integer [pk]
+  name varchar [not null]
+  description text
+}
+
+Table sale {
+  sale_id integer [pk]
+  customer_id integer
+  store_id integer
+  sale_date timestamp [not null]
+  total decimal
+}
+
+Table sale_item {
+  sale_item_id integer [pk]
+  sale_id integer
+  product_id integer
+  quantity integer [not null]
+  unit_price decimal [not null]
+  offer_id integer
+  subtotal decimal [not null]
+}
+
+Table offer {
+  offer_id integer [pk]
+  name varchar
+  description text
+  discount_percent decimal
+  start_date date [not null]
+  end_date date [not null]
+}
+
+Table product_offer {
+  product_id integer [pk]
+  offer_id integer [pk]
+}
+
+Table store {
+  store_id integer [pk]
+  name varchar [not null]
+  address varchar
+  city varchar
+  postal_code varchar
+  latitude decimal
+  longitude decimal
+  opened_date date
+}
+
+Table inventory {
+  inventory_id integer [pk]
+  store_id integer
+  product_id integer
+  stock integer
+  last_update timestamp
+}
+
+// ── CRM ──────────────────────────────────────────
+Table customer {
+  customer_id integer [pk]
+  first_name varchar
+  last_name varchar
+  last_name2 varchar
+  email varchar
+  phone varchar
+  created_at timestamp
+}
+
+Table city_zone {
+  postal_code varchar [pk]
+  district varchar [not null]
+  area_type varchar
+  zone_orientation varchar
+  city_code varchar
+  city varchar
+}
+
+// ── Logistica ──────────────────────────────────────────
+Table warehouse {
+  warehouse_id integer [pk]
+  name varchar [not null]
+  address varchar
+  city varchar
+  postal_code varchar
+  latitude decimal
+  longitude decimal
+}
+
+Table warehouse_location {
+  location_id integer [pk]
+  warehouse_id integer
+  zone varchar
+  aisle varchar
+  shelf varchar
+  bin_code varchar
+}
+
+Table central_inventory {
+  inventory_id integer [pk]
+  warehouse_id integer
+  location_id integer
+  product_id integer
+  quantity integer [not null]
+  min_stock integer
+  max_stock integer
+  last_update timestamp
+}
+
+// ── Postventa ──────────────────────────────────────────
+Table return_item {
+  return_id integer [pk]
+  sale_item_id integer
+  return_date timestamp [not null]
+  quantity integer [not null]
+  reason_id integer
+}
+
+Table return_reason {
+  reason_id integer [pk]
+  reason text
+  active boolean
+}
+
+// ── Relaciones ─────────────────────────────────────────────
+Ref: central_inventory.location_id > warehouse_location.location_id
+Ref: central_inventory.product_id > central_product.product_id
+Ref: central_inventory.warehouse_id > warehouse.warehouse_id
+Ref: central_product.brand_id > brand.brand_id
+Ref: central_product.category_id > category.category_id
+Ref: inventory.product_id > product.product_id
+Ref: inventory.store_id > store.store_id
+Ref: product_offer.offer_id > offer.offer_id
+Ref: product_offer.product_id > product.product_id
+Ref: return_item.sale_item_id > sale_item.sale_item_id
+Ref: sale.customer_id > customer.customer_id
+Ref: sale.store_id > store.store_id
+Ref: sale_item.offer_id > offer.offer_id
+Ref: sale_item.product_id > product.product_id
+Ref: sale_item.sale_id > sale.sale_id
+Ref: warehouse_location.warehouse_id > warehouse.warehouse_id
