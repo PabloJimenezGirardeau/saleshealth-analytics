@@ -7,25 +7,97 @@
 
 ---
 
+## 🔗 Dashboard en vivo
+
+👉 **[Abrir Dashboard Interactivo](https://pablojimenezgirardeau.github.io/saleshealth-analytics/dashboard.html)**
+
+---
+
 ## Descripción
 
 Construcción de un entorno analítico end-to-end sobre una base de datos operacional de venta de 50 productos de salud. El proyecto incluye modelado dimensional (Kimball), pipeline ETL idempotente, cálculo de métricas de cliente (CLTV, AOV, Return Rate), segmentación K-Means y un dashboard interactivo de 10 páginas.
 
 ---
 
-## Arquitectura
+## Mapa del proyecto
 
 ```
-public (OLTP, 17 tablas)
-    ↓ ETL
-stg (staging, 17 tablas)
-    ↓
-dwh (estrella Kimball: 2 hechos + 7 dimensiones)
-    ↓
-marts (customer_360: CLTV + clustering por cliente)
+DATOS OPERACIONALES (PostgreSQL · saleshealth)
+│
+│   ERP (10 tablas)        CRM (2 tablas)
+│   ventas, productos      clientes, zonas
+│   tiendas, ofertas
+│                          Logística (3 tablas)
+│   Postventa (2 tablas)   almacenes, inventario
+│   devoluciones
+│
+▼
+┌─────────────────────────────────────────┐
+│  FASE 1 — Calidad de Datos              │
+│  10 problemas detectados · 3 corregidos │
+│  Regla: nunca eliminar clientes         │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  FASE 2 — Modelo ER                     │
+│  17 tablas · 4 sistemas de origen       │
+│  Diagrama: docs/er_operacional.png      │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  FASE 3 — Modelo Dimensional (Kimball)  │
+│  2 hechos + 7 dimensiones               │
+│  fact_ventas (42.555) + fact_devoluc.   │
+│  Diagrama: docs/modelo_dimensional.png  │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  FASE 4 — Pipeline ETL                  │
+│  public → stg → dwh → marts             │
+│  Idempotente · 21/21 validaciones OK    │
+│  Tiempo: ~18s · python -m etl.run_etl   │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  FASE 5 — Métricas de Cliente           │
+│  CLTV · AOV · Return Rate               │
+│  marts.customer_360 (5.750 clientes)    │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  FASE 6 — PCA + Clustering K-Means      │
+│  K=3 · Silhouette 0.847                 │
+│  Champions / Base / Churned             │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│  DASHBOARD INTERACTIVO (HTML + JS)      │
+│  10 páginas · sin dependencias server   │
+│  Chart.js · selectores · comparadores  │
+└─────────────────────────────────────────┘
 ```
 
-Una única base de datos PostgreSQL (`saleshealth`) con 4 schemas separados. Los JOINs entre capas son directos sin necesidad de conexiones externas.
+---
+
+## Arquitectura de la BD
+
+```
+public (OLTP · 17 tablas)
+    ↓ ETL extract
+stg (staging · 17 tablas)
+    ↓ ETL load
+dwh (estrella Kimball · 2 hechos + 7 dims)
+    ↓ ETL customer_360 + clusters
+marts (customer_360 · 5.750 filas)
+```
+
+Una única base de datos PostgreSQL (`saleshealth`) con 4 schemas separados. JOINs directos entre capas sin conexiones externas.
 
 ---
 
@@ -44,15 +116,18 @@ saleshealth-analytics/
 │   ├── customer_360.py         # CLTV, AOV, Return Rate por cliente
 │   └── clusters.py             # PCA + K-Means K=3
 ├── notebooks/
-│   ├── 10_metricas_cliente.ipynb   # Análisis CLTV, AOV, Return Rate
-│   └── 11_clustering.ipynb         # PCA + segmentación de clientes
+│   ├── fase1/                  # Exploración y limpieza de datos
+│   ├── fase2_er/               # Modelo Entidad-Relación
+│   ├── fase3_dwh/              # Modelo Dimensional
+│   ├── fase5_metricas/         # Análisis CLTV, AOV, Return Rate
+│   └── fase6_clustering/       # PCA + segmentación de clientes
 ├── docs/
-│   ├── documento_tecnico.docx      # Documento técnico (5 hojas)
+│   ├── documento_tecnico.docx  # Documento técnico (5 hojas)
 │   ├── er_operacional_dbdiagram.png
 │   ├── modelo_dimensional.png
-│   └── GD_ProyectoFinal.pdf        # Enunciado oficial
+│   └── GD_ProyectoFinal.pdf    # Enunciado oficial
 ├── reports/
-│   └── dashboard_data.js       # Datos del dashboard (generado por export_data.py)
+│   └── dashboard_data.js       # Datos del dashboard (generado)
 └── .gitignore
 ```
 
@@ -62,62 +137,12 @@ saleshealth-analytics/
 
 | # | Entregable | Archivo |
 |---|-----------|---------|
-| 1 | Diagrama Modelo Entidad-Relación | `docs/er_operacional_dbdiagram.png` |
-| 2 | Diagrama Modelo Dimensional | `docs/modelo_dimensional.png` |
+| 1 | Diagrama Modelo Entidad-Relación | `docs/diagramas/er_operacional_dbdiagram.png` |
+| 2 | Diagrama Modelo Dimensional | `docs/diagramas/modelo_dimensional.png` |
 | 3 | ETL de datos | `etl/` |
-| 4 | Cálculo y análisis de CLTV | `notebooks/10_metricas_cliente.ipynb` |
-| 5 | PCA y clustering | `notebooks/11_clustering.ipynb` |
-| 6 | Documento técnico (máx. 5 hojas) | `docs/documento_tecnico.docx` |
-
----
-
-## Stack tecnológico
-
-- **Base de datos:** PostgreSQL 18
-- **ETL:** Python 3 · SQLAlchemy · psycopg2
-- **Análisis:** pandas · scikit-learn · matplotlib
-- **Dashboard:** HTML + JavaScript + Chart.js (sin dependencias de servidor)
-- **Modelado:** Metodología Kimball — esquema estrella
-
----
-
-## Cómo ejecutar
-
-### Prerrequisitos
-- PostgreSQL 18 con la base de datos `saleshealth` cargada
-- Python 3.10+
-
-### 1. Instalar dependencias
-```bash
-pip install sqlalchemy psycopg2-binary pandas scikit-learn matplotlib
-```
-
-### 2. Configurar conexión
-Crear un archivo `.env` en la raíz (no incluido en el repo por seguridad):
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=saleshealth
-DB_USER=postgres
-DB_PASS=tu_contraseña
-```
-
-### 3. Ejecutar el ETL
-```bash
-python -m etl.run_etl
-```
-Tiempo estimado: ~18 segundos. 21/21 validaciones automáticas.
-
-### 4. Generar datos del dashboard
-```bash
-python export_data.py
-```
-
-### 5. Abrir el dashboard
-```bash
-python -m http.server 8080
-```
-Navegar a `http://localhost:8080/dashboard.html`
+| 4 | Cálculo y análisis de CLTV | `notebooks/fase5_metricas/10_metricas_cliente.ipynb` |
+| 5 | PCA y clustering | `notebooks/fase6_clustering/11_clustering.ipynb` |
+| 6 | Documento técnico (máx. 5 hojas) | `documento_tecnico.docx` |
 
 ---
 
@@ -143,20 +168,43 @@ Navegar a `http://localhost:8080/dashboard.html`
 
 ---
 
-## Dashboard
+## Stack tecnológico
 
-10 páginas interactivas con selectores, comparadores y gráficas dinámicas:
+- **Base de datos:** PostgreSQL 18
+- **ETL:** Python 3 · SQLAlchemy · psycopg2
+- **Análisis:** pandas · scikit-learn · matplotlib
+- **Dashboard:** HTML + JavaScript + Chart.js (sin dependencias de servidor)
+- **Modelado:** Metodología Kimball — esquema estrella
 
-1. Resumen Ejecutivo
-2. Inicio — KPIs con comparativa YoY
-3. KPIs Globales — evolución mensual y estacionalidad
-4. Devoluciones — motivos, evolución, productos
-5. Análisis Cliente — Pareto, Customer 360
-6. Productos — selector interactivo + comparador
-7. Marcas & Categorías — selector + evolución
-8. Rentabilidad — márgenes, costes, evolución
-9. Tiendas — selector individual + comparador hasta 4
-10. Tendencias — YoY, crecimiento, productos en declive
+---
+
+## Cómo ejecutar
+
+### 1. Instalar dependencias
+```bash
+pip install sqlalchemy psycopg2-binary pandas scikit-learn matplotlib
+```
+
+### 2. Configurar conexión
+Crear `etl/config.py` con las credenciales (no incluido por seguridad).
+
+### 3. Ejecutar el ETL
+```bash
+python -m etl.run_etl
+```
+
+### 4. Generar datos del dashboard
+```bash
+python export_data.py
+```
+
+### 5. Abrir el dashboard localmente
+```bash
+python -m http.server 8080
+# → http://localhost:8080/dashboard.html
+```
+
+O directamente online: **[Dashboard en GitHub Pages](https://pablojimenezgirardeau.github.io/saleshealth-analytics/dashboard.html)**
 
 ---
 
